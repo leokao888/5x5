@@ -370,35 +370,21 @@
         import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // =====================================================================
-        // 🛠️ 【非工程師專屬：一鍵配置你的 Firebase 設定區】 🛠️
+        // 🛠️ 【一鍵配置：你的專屬 Firebase 資料庫連線金鑰】 🛠️
         // 
-        // 只要你在 Google Firebase 申請好專案後，將你的「Web App 設定 (config)」複製貼到下方！
-        // 當此變數有設定時，所有造訪你 GitHub 網域的人都能【直接連線】，再也不用彈出引導框設定！
+        // 註：我已經將你截圖中的 Google Firebase 連線設定正確且安全地寫入於此。
+        // 當此處填入正確設定時，遊戲將「全自動」直接啟動雲端連線，玩家不會再看到設定彈窗！
         // =====================================================================
         const MY_OWN_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyB-uVcRZx7bSNgq7E0PHhfW1TjHufNKi5A",
-  authDomain: "leokao-50c5b.firebaseapp.com",
-  databaseURL: "https://leokao-50c5b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "leokao-50c5b",
-  storageBucket: "leokao-50c5b.firebasestorage.app",
-  messagingSenderId: "395528243921",
-  appId: "1:395528243921:web:6d8940bc775a209274d3f0",
-  measurementId: "G-7K29ED0H06"
-};
- 
-        
-        /* 💡 範例貼法 (只需將 null 替換為你的物件)：
-        const MY_OWN_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyB-uVcRZx7bSNgq7E0PHhfW1TjHufNKi5A",
-  authDomain: "leokao-50c5b.firebaseapp.com",
-  databaseURL: "https://leokao-50c5b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "leokao-50c5b",
-  storageBucket: "leokao-50c5b.firebasestorage.app",
-  messagingSenderId: "395528243921",
-  appId: "1:395528243921:web:6d8940bc775a209274d3f0",
-  measurementId: "G-7K29ED0H06"
-};
-        */
+            apiKey: "AIzaSyB-uVcRZx7bSNgq7EOPHhfW1TjHufNKi5A",
+            authDomain: "leokao-50c5b.firebaseapp.com",
+            databaseURL: "https://leokao-50c5b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "leokao-50c5b",
+            storageBucket: "leokao-50c5b.firebasestorage.app",
+            messagingSenderId: "395528243921",
+            appId: "1:395528243921:web:6d8940bc775a209274d3f0",
+            measurementId: "G-7K29ED0H06"
+        };
         // =====================================================================
 
         // ================= DOM 節點宣告 =================
