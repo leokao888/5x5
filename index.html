@@ -450,14 +450,12 @@
 
         // 讀取 Firebase 金鑰 (支援：寫死金鑰 > 平台沙盒 > 本地快取金鑰)
         function loadFirebaseConfig() {
-            // 1. 優先採用你在上方「寫死」的專屬金鑰
             if (MY_OWN_FIREBASE_CONFIG && MY_OWN_FIREBASE_CONFIG.apiKey) {
                 firebaseConfig = MY_OWN_FIREBASE_CONFIG;
                 appId = 'user-hardcoded-app';
                 return true;
             }
 
-            // 2. 其次嘗試平台沙盒測試金鑰
             try {
                 if (typeof __firebase_config !== 'undefined' && __firebase_config) {
                     firebaseConfig = JSON.parse(__firebase_config);
@@ -468,7 +466,6 @@
                 console.warn("無法解析平台沙盒 Firebase 金鑰:", e);
             }
 
-            // 3. 最後嘗試讀取玩家在網頁自訂輸入的 localStorage
             try {
                 const localSaved = localStorage.getItem('custom_firebase_config_neo');
                 if (localSaved) {
@@ -485,7 +482,7 @@
         // 啟動 Firebase 雲端服務
         async function tryInitializeFirebase() {
             if (!loadFirebaseConfig()) {
-                console.log("未偵測到任何 Firebase 配置。線上模式暫不開放，但單機與雙人同屏正常。");
+                console.log("未偵測到任何 Firebase 配置。線上模式暫不開放。");
                 return false;
             }
 
@@ -494,6 +491,7 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
+                // 進行匿名驗證
                 await signInAnonymously(auth);
 
                 onAuthStateChanged(auth, (user) => {
@@ -507,7 +505,18 @@
                 return true;
             } catch (err) {
                 console.error("Firebase 連線初始化失敗:", err);
-                showToast("雲端連線失敗，請檢查金鑰格式。");
+                
+                // 貼心防呆提示：如果錯誤代碼代表「未啟用匿名驗證」
+                if (err.code === 'auth/operation-not-allowed') {
+                    showToast("【錯誤】請至 Firebase 後台開啟「匿名（Anonymous）」登入功能！", 8000);
+                    // 同步在畫面上提示
+                    const statusText = document.querySelector('#peerInitStatus p');
+                    if (statusText) {
+                        statusText.innerHTML = "<span class='text-red-400 font-bold'>請先至 Firebase 網頁後台：<br>Build ➔ Authentication ➔ 啟用「匿名」登入！</span>";
+                    }
+                } else {
+                    showToast("雲端連線失敗，請確認您的 Firebase 安全規則設定。");
+                }
                 return false;
             }
         }
@@ -647,7 +656,6 @@
         });
 
         btnModePVPOnline.addEventListener('click', () => {
-            // 如果還沒設定任何 Firebase Config 則彈出引導窗
             if (!firebaseConfig) {
                 modalFirebaseSetup.classList.remove('hidden');
                 return;
