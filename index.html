@@ -224,14 +224,14 @@
                             <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">目前局勢</p>
                             <div id="turnIndicator" class="text-xl font-black flex items-center justify-center space-x-2">
                                 <span class="cell-o">O</span>
-                                <span>玩家回合</span>
+                                <span>藍色 (O) 回合</span>
                             </div>
                         </div>
 
                         <!-- 計分板 -->
                         <div class="grid grid-cols-3 gap-2 text-center mb-6">
                             <div class="bg-blue-950/20 border border-blue-500/20 p-3 rounded-xl">
-                                <p class="text-xs text-blue-400">圈圈 (O)</p>
+                                <p class="text-xs text-blue-400">藍色 (O)</p>
                                 <p id="scoreO" class="text-2xl font-bold font-['Orbitron'] mt-1">0</p>
                             </div>
                             <div class="bg-gray-950/20 border border-gray-800 p-3 rounded-xl flex flex-col justify-center">
@@ -239,7 +239,7 @@
                                 <p id="scoreDraw" class="text-xl font-bold font-['Orbitron'] mt-1">0</p>
                             </div>
                             <div class="bg-rose-950/20 border border-rose-500/20 p-3 rounded-xl">
-                                <p class="text-xs text-rose-400">叉叉 (X)</p>
+                                <p class="text-xs text-rose-400">紅色 (X)</p>
                                 <p id="scoreX" class="text-2xl font-bold font-['Orbitron'] mt-1">0</p>
                             </div>
                         </div>
@@ -291,8 +291,8 @@
             
             <h3 class="text-xs text-gray-400 uppercase tracking-widest mb-1">戰局結束</h3>
             <div id="winnerStatement" class="text-3xl font-extrabold mb-6">
-                <!-- 勝負宣告 -->
-                <span class="text-blue-400 font-black">O 玩家獲勝！</span>
+                <!-- 勝負宣告 (JS動態渲染彩色玩家) -->
+                <span class="text-blue-400 font-black">藍色玩家 獲勝！</span>
             </div>
 
             <div class="space-y-3">
@@ -506,10 +506,8 @@
             } catch (err) {
                 console.error("Firebase 連線初始化失敗:", err);
                 
-                // 貼心防呆提示：如果錯誤代碼代表「未啟用匿名驗證」
                 if (err.code === 'auth/operation-not-allowed') {
                     showToast("【錯誤】請至 Firebase 後台開啟「匿名（Anonymous）」登入功能！", 8000);
-                    // 同步在畫面上提示
                     const statusText = document.querySelector('#peerInitStatus p');
                     if (statusText) {
                         statusText.innerHTML = "<span class='text-red-400 font-bold'>請先至 Firebase 網頁後台：<br>Build ➔ Authentication ➔ 啟用「匿名」登入！</span>";
@@ -857,6 +855,15 @@
             }
         }
 
+        // 輔助函式：取得彩色的玩家名稱
+        function getColoredWinnerHTML(player) {
+            if (player === 'O') {
+                return '<span class="text-blue-400 font-extrabold neon-text-blue">藍色玩家 (O)</span>';
+            } else {
+                return '<span class="text-rose-400 font-extrabold neon-text-rose">紅色玩家 (X)</span>';
+            }
+        }
+
         function evaluateGameStatus() {
             const winIndices = checkWin(boardState, currentTurn);
             if (winIndices.length > 0) {
@@ -875,7 +882,10 @@
                 scores[currentTurn]++;
                 updateScoresUI();
                 playSound('win');
-                showGameOverModal(`${currentTurn} 玩家獲勝！`);
+                
+                // 改為顯示直覺的「藍色/紅色玩家」
+                const winnerHTML = getColoredWinnerHTML(currentTurn);
+                showGameOverModal(`${winnerHTML} 獲勝！`);
                 return true;
             }
 
@@ -893,9 +903,19 @@
 
         function updateTurnIndicator() {
             if (currentTurn === 'O') {
-                turnIndicator.innerHTML = `<span class="cell-o">O</span><span>${currentMode === MODES.PVP_ONLINE && myOnlineRole === 'O' ? '你的回合' : '玩家回合'}</span>`;
+                let statusText = '藍色 (O) 的回合';
+                if (currentMode === MODES.PVP_ONLINE) {
+                    statusText = myOnlineRole === 'O' ? '您的回合 (藍色 O)' : '對手回合 (藍色 O)';
+                }
+                turnIndicator.innerHTML = `<span class="cell-o">O</span><span>${statusText}</span>`;
             } else {
-                turnIndicator.innerHTML = `<span class="cell-x">X</span><span>${currentMode === MODES.PVP_ONLINE && myOnlineRole === 'X' ? '你的回合' : (currentMode === MODES.PVE ? '電腦思考中' : '玩家回合')}</span>`;
+                let statusText = '紅色 (X) 的回合';
+                if (currentMode === MODES.PVP_ONLINE) {
+                    statusText = myOnlineRole === 'X' ? '您的回合 (紅色 X)' : '對手回合 (紅色 X)';
+                } else if (currentMode === MODES.PVE) {
+                    statusText = '電腦思考中 (紅色 X)';
+                }
+                turnIndicator.innerHTML = `<span class="cell-x">X</span><span>${statusText}</span>`;
             }
         }
 
@@ -913,7 +933,7 @@
             updateTurnIndicator();
             
             if (currentMode === MODES.PVP_ONLINE) {
-                myRoleText.textContent = myOnlineRole;
+                myRoleText.textContent = myOnlineRole === 'O' ? '藍色 (O)' : '紅色 (X)';
             }
         }
 
@@ -1211,7 +1231,9 @@
                 scores[winner]++;
                 updateScoresUI();
                 playSound('win');
-                showGameOverModal(`${winner} 玩家獲勝！`);
+                
+                const winnerHTML = getColoredWinnerHTML(winner);
+                showGameOverModal(`${winnerHTML} 獲勝！`);
             }
         }
 
