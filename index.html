@@ -9,16 +9,6 @@
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- 引入主流的雲端即時同步資料庫 SDK (Firebase v11) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // 將雲端資料庫模組掛載至全域視窗，方便普通 JavaScript 呼叫
-        window.dbUtils = { doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, serverTimestamp };
-    </script>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700&display=swap');
         
@@ -316,6 +306,52 @@
         </div>
     </div>
 
+    <!-- ================= FIREBASE CONFIG MODAL (自訂資料庫設定彈窗) ================= -->
+    <div id="modalFirebaseSetup" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-gray-900 border border-gray-800 w-full max-w-lg p-6 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="text-center mb-4">
+                <div class="inline-flex p-3 bg-rose-500/10 rounded-full text-rose-400 mb-2">
+                    <i data-lucide="database" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-xl font-bold">設定你的免費即時雲端資料庫</h3>
+                <p class="text-xs text-gray-400 mt-1">當前在自訂伺服器上執行，需要您貼上專屬 Firebase 憑證以進行雙人跨機連線。</p>
+            </div>
+
+            <!-- 教學步驟 -->
+            <div class="bg-black/30 border border-gray-800 rounded-xl p-4 text-xs text-gray-300 space-y-2 mb-4">
+                <p class="font-bold text-rose-400">💡 5分鐘極速免費申請步驟：</p>
+                <ol class="list-decimal list-inside space-y-1 text-gray-400">
+                    <li>造訪 <a href="https://console.firebase.google.com/" target="_blank" class="text-blue-400 underline">Firebase Console</a> 並登入 Google 帳號。</li>
+                    <li>點擊「建立專案」，輸入專案名稱（例如 `my-ttt-game`）。</li>
+                    <li>進入專案後，在左側選單點擊「Build」➔「Firestore Database」，點擊「建立資料庫」，選擇「測試模式」啟動。</li>
+                    <li>回到專案首頁，點擊網頁圖示「Web (< />)」，註冊應用程式。</li>
+                    <li>複製畫面中出現的 <code class="text-rose-300 bg-gray-800 px-1 rounded">const firebaseConfig = { ... };</code> 物件內容並貼在下方。</li>
+                </ol>
+            </div>
+
+            <div class="space-y-3 text-left">
+                <label class="block text-xs text-gray-400 uppercase tracking-wider">將你的 Firebase Config 貼在下方</label>
+                <textarea id="firebaseConfigInput" rows="6" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "...",
+  "projectId": "...",
+  "storageBucket": "...",
+  "messagingSenderId": "...",
+  "appId": "..."
+}' class="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-xs font-mono text-green-400 focus:outline-none focus:border-rose-500 transition"></textarea>
+            </div>
+
+            <div class="mt-6 flex space-x-3">
+                <button id="btnCancelSetup" class="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-bold rounded-xl border border-gray-700 transition">
+                    取消
+                </button>
+                <button id="btnSaveSetup" class="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg transition">
+                    儲存並啟用連線
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 自訂提示小通知 -->
     <div id="toastMessage" class="fixed bottom-6 right-6 bg-gray-800/90 border border-gray-700 text-gray-100 px-4 py-3 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 z-50">
         <i data-lucide="info" class="w-5 h-5 text-blue-400"></i>
@@ -331,41 +367,159 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ================= Firebase 初始化 (依照系統規定規則 3) =================
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // =====================================================================
+        // 🛠️ 【非工程師專屬：一鍵配置你的 Firebase 設定區】 🛠️
+        // 
+        // 只要你在 Google Firebase 申請好專案後，將你的「Web App 設定 (config)」複製貼到下方！
+        // 當此變數有設定時，所有造訪你 GitHub 網域的人都能【直接連線】，再也不用彈出引導框設定！
+        // =====================================================================
+        const MY_OWN_FIREBASE_CONFIG = null; 
+        
+        /* 💡 範例貼法 (只需將 null 替換為你的物件)：
+        const MY_OWN_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyB-uVcRZx7bSNgq7E0PHhfW1TjHufNKi5A",
+  authDomain: "leokao-50c5b.firebaseapp.com",
+  databaseURL: "https://leokao-50c5b-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "leokao-50c5b",
+  storageBucket: "leokao-50c5b.firebasestorage.app",
+  messagingSenderId: "395528243921",
+  appId: "1:395528243921:web:6d8940bc775a209274d3f0",
+  measurementId: "G-7K29ED0H06"
+};
+        */
+        // =====================================================================
 
+        // ================= DOM 節點宣告 =================
+        const screenStart = document.getElementById('screenStart');
+        const screenLobby = document.getElementById('screenLobby');
+        const screenGame = document.getElementById('screenGame');
+        const modalGameOver = document.getElementById('modalGameOver');
+        const modalFirebaseSetup = document.getElementById('modalFirebaseSetup');
+        
+        const btnModePVE = document.getElementById('btnModePVE');
+        const btnModePVPLocal = document.getElementById('btnModePVPLocal');
+        const btnModePVPOnline = document.getElementById('btnModePVPOnline');
+        const btnBackFromLobby = document.getElementById('btnBackFromLobby');
+        const btnBackToHome = document.getElementById('btnBackToHome');
+        
+        const peerInitStatus = document.getElementById('peerInitStatus');
+        const peerPanel = document.getElementById('peerPanel');
+        const btnCreateRoom = document.getElementById('btnCreateRoom');
+        const btnJoinLobbyMode = document.getElementById('btnJoinLobbyMode');
+        const roomWaitPanel = document.getElementById('roomWaitPanel');
+        const roomInputPanel = document.getElementById('roomInputPanel');
+        const btnCancelRoom = document.getElementById('btnCancelRoom');
+        const btnCancelSetup = document.getElementById('btnCancelSetup');
+        const btnSaveSetup = document.getElementById('btnSaveSetup');
+        const firebaseConfigInput = document.getElementById('firebaseConfigInput');
+        
+        const myIdDisplay = document.getElementById('myIdDisplay');
+        const btnCopyId = document.getElementById('btnCopyId');
+        const destPeerId = document.getElementById('destPeerId');
+        const btnConnect = document.getElementById('btnConnect');
+        const connStatusText = document.getElementById('connStatusText');
+        
+        const turnIndicator = document.getElementById('turnIndicator');
+        const gameModeBadge = document.getElementById('gameModeBadge');
+        const scoreO = document.getElementById('scoreO');
+        const scoreDraw = document.getElementById('scoreDraw');
+        const scoreX = document.getElementById('scoreX');
+        const onlineInfoBox = document.getElementById('onlineInfoBox');
+        const myRoleText = document.getElementById('myRoleText');
+        const peerStateText = document.getElementById('peerStateText');
+        const btnReset = document.getElementById('btnReset');
+        const board = document.getElementById('board');
+        
+        const winnerStatement = document.getElementById('winnerStatement');
+        const btnModalNextGame = document.getElementById('btnModalNextGame');
+        const btnModalBackHome = document.getElementById('btnModalBackHome');
+        const soundToggle = document.getElementById('soundToggle');
+
+        // ================= 安全初始化 Lucide 圖示 (最優先) =================
+        try {
+            lucide.createIcons();
+        } catch (e) {
+            console.error("Lucide 初始化失敗", e);
+        }
+
+        // ================= 變數安全解析與防當機沙盒 =================
+        let firebaseConfig = null;
+        let appId = 'default-app-id';
+        let db = null;
+        let auth = null;
         let currentUser = null;
         let isAuthReady = false;
 
-        // 登入流程：優先執行匿名登入，完成後解鎖介面
-        const initAuth = async () => {
+        // 讀取 Firebase 金鑰 (支援：寫死金鑰 > 平台沙盒 > 本地快取金鑰)
+        function loadFirebaseConfig() {
+            // 1. 優先採用你在上方「寫死」的專屬金鑰
+            if (MY_OWN_FIREBASE_CONFIG && MY_OWN_FIREBASE_CONFIG.apiKey) {
+                firebaseConfig = MY_OWN_FIREBASE_CONFIG;
+                appId = 'user-hardcoded-app';
+                return true;
+            }
+
+            // 2. 其次嘗試平台沙盒測試金鑰
             try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    firebaseConfig = JSON.parse(__firebase_config);
+                    appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                    return true;
+                }
+            } catch (e) {
+                console.warn("無法解析平台沙盒 Firebase 金鑰:", e);
+            }
+
+            // 3. 最後嘗試讀取玩家在網頁自訂輸入的 localStorage
+            try {
+                const localSaved = localStorage.getItem('custom_firebase_config_neo');
+                if (localSaved) {
+                    firebaseConfig = JSON.parse(localSaved);
+                    appId = 'custom-deployed-app';
+                    return true;
+                }
+            } catch (e) {
+                console.warn("無法解析 LocalStorage 自訂 Firebase 金鑰:", e);
+            }
+            return false;
+        }
+
+        // 啟動 Firebase 雲端服務
+        async function tryInitializeFirebase() {
+            if (!loadFirebaseConfig()) {
+                console.log("未偵測到任何 Firebase 配置。線上模式暫不開放，但單機與雙人同屏正常。");
+                return false;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
                 await signInAnonymously(auth);
+
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    if (user) {
+                        isAuthReady = true;
+                        peerInitStatus.classList.add('hidden');
+                        peerPanel.classList.remove('hidden');
+                    }
+                });
+                return true;
             } catch (err) {
-                console.error("雲端驗證失敗:", err);
-                showToast("雲端連線失敗，請重新整理網頁");
+                console.error("Firebase 連線初始化失敗:", err);
+                showToast("雲端連線失敗，請檢查金鑰格式。");
+                return false;
             }
-        };
+        }
 
-        initAuth();
+        // 立即安全載入 Firebase
+        tryInitializeFirebase();
 
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                isAuthReady = true;
-                // 解鎖介面，顯示按鈕
-                peerInitStatus.classList.add('hidden');
-                peerPanel.classList.remove('hidden');
-            }
-        });
-
-        // ================= 遊戲常數與全域變數 =================
+        // ================= 遊戲核心變數與常數 =================
         const MODES = {
             PVE: 'pve',
             PVP_LOCAL: 'pvp_local',
@@ -380,8 +534,8 @@
 
         // 雲端連線變數
         let activeRoomId = '';
-        let myOnlineRole = ''; // 'O' 為房主，'X' 為加入者
-        let roomListenerUnsubscribe = null; // 雲端監聽器
+        let myOnlineRole = ''; 
+        let roomListenerUnsubscribe = null; 
 
         // 歷史比分
         let scores = { O: 0, X: 0, Draw: 0 };
@@ -440,51 +594,9 @@
                     osc.stop(audioCtx.currentTime + 0.25);
                 }
             } catch (e) {
-                console.log('音效解鎖異常:', e);
+                console.log('音效暫未啟用:', e);
             }
         }
-
-        // ================= DOM 節點 =================
-        const screenStart = document.getElementById('screenStart');
-        const screenLobby = document.getElementById('screenLobby');
-        const screenGame = document.getElementById('screenGame');
-        const modalGameOver = document.getElementById('modalGameOver');
-        
-        const btnModePVE = document.getElementById('btnModePVE');
-        const btnModePVPLocal = document.getElementById('btnModePVPLocal');
-        const btnModePVPOnline = document.getElementById('btnModePVPOnline');
-        const btnBackFromLobby = document.getElementById('btnBackFromLobby');
-        const btnBackToHome = document.getElementById('btnBackToHome');
-        
-        const peerInitStatus = document.getElementById('peerInitStatus');
-        const peerPanel = document.getElementById('peerPanel');
-        const btnCreateRoom = document.getElementById('btnCreateRoom');
-        const btnJoinLobbyMode = document.getElementById('btnJoinLobbyMode');
-        const roomWaitPanel = document.getElementById('roomWaitPanel');
-        const roomInputPanel = document.getElementById('roomInputPanel');
-        const btnCancelRoom = document.getElementById('btnCancelRoom');
-        
-        const myIdDisplay = document.getElementById('myIdDisplay');
-        const btnCopyId = document.getElementById('btnCopyId');
-        const destPeerId = document.getElementById('destPeerId');
-        const btnConnect = document.getElementById('btnConnect');
-        const connStatusText = document.getElementById('connStatusText');
-        
-        const turnIndicator = document.getElementById('turnIndicator');
-        const gameModeBadge = document.getElementById('gameModeBadge');
-        const scoreO = document.getElementById('scoreO');
-        const scoreDraw = document.getElementById('scoreDraw');
-        const scoreX = document.getElementById('scoreX');
-        const onlineInfoBox = document.getElementById('onlineInfoBox');
-        const myRoleText = document.getElementById('myRoleText');
-        const peerStateText = document.getElementById('peerStateText');
-        const btnReset = document.getElementById('btnReset');
-        const board = document.getElementById('board');
-        
-        const winnerStatement = document.getElementById('winnerStatement');
-        const btnModalNextGame = document.getElementById('btnModalNextGame');
-        const btnModalBackHome = document.getElementById('btnModalBackHome');
-        const soundToggle = document.getElementById('soundToggle');
 
         // ================= Toast 訊息提示 =================
         function showToast(text, duration = 3000) {
@@ -515,7 +627,7 @@
             }
         }
 
-        // ================= 模式選擇按鈕 =================
+        // ================= 模式選擇按鈕事件 =================
         btnModePVE.addEventListener('click', () => {
             currentMode = MODES.PVE;
             gameModeBadge.textContent = "人機對戰";
@@ -539,6 +651,12 @@
         });
 
         btnModePVPOnline.addEventListener('click', () => {
+            // 如果還沒設定任何 Firebase Config 則彈出引導窗
+            if (!firebaseConfig) {
+                modalFirebaseSetup.classList.remove('hidden');
+                return;
+            }
+
             currentMode = MODES.PVP_ONLINE;
             gameModeBadge.textContent = "線上聯網";
             gameModeBadge.className = "bg-rose-900/40 text-rose-300 border border-rose-500/30 text-xs px-2.5 py-1 rounded-full font-bold";
@@ -546,7 +664,6 @@
             scores = { O: 0, X: 0, Draw: 0 };
             updateScoresUI();
             
-            // 重置大廳按鈕狀態
             roomWaitPanel.classList.add('hidden');
             roomInputPanel.classList.add('hidden');
             
@@ -557,6 +674,7 @@
             } else {
                 peerInitStatus.classList.remove('hidden');
                 peerPanel.classList.add('hidden');
+                tryInitializeFirebase();
             }
         });
 
@@ -570,18 +688,51 @@
             showScreen('start');
         });
 
-        // 聲音切換
-        soundToggle.addEventListener('click', () => {
-            soundEnabled = !soundEnabled;
-            const icon = soundToggle.querySelector('i');
-            if (soundEnabled) {
-                icon.setAttribute('data-lucide', 'volume-2');
-                showToast('聲音已開啟');
-            } else {
-                icon.setAttribute('data-lucide', 'volume-x');
-                showToast('聲音已靜音');
+        // ================= Firebase 自訂視窗事件 =================
+        btnCancelSetup.addEventListener('click', () => {
+            modalFirebaseSetup.classList.add('hidden');
+        });
+
+        btnSaveSetup.addEventListener('click', async () => {
+            const rawText = firebaseConfigInput.value.trim();
+            if (!rawText) {
+                showToast("請輸入有效的 Firebase 配置設定");
+                return;
             }
-            lucide.createIcons();
+
+            try {
+                let cleanedText = rawText;
+                if (cleanedText.includes('firebaseConfig =')) {
+                    cleanedText = cleanedText.split('firebaseConfig =')[1].trim();
+                }
+                if (cleanedText.endsWith(';')) {
+                    cleanedText = cleanedText.slice(0, -1).trim();
+                }
+
+                let parsedConfig;
+                try {
+                    parsedConfig = JSON.parse(cleanedText);
+                } catch (e) {
+                    parsedConfig = new Function(`return ${cleanedText}`)();
+                }
+
+                if (!parsedConfig.apiKey || !parsedConfig.projectId) {
+                    throw new Error("缺少關鍵欄位");
+                }
+
+                localStorage.setItem('custom_firebase_config_neo', JSON.stringify(parsedConfig));
+                modalFirebaseSetup.classList.add('hidden');
+                showToast("憑證設定成功，正在測試連線...");
+
+                const success = await tryInitializeFirebase();
+                if (success) {
+                    showToast("雲端連線成功！");
+                    btnModePVPOnline.click(); 
+                }
+            } catch (err) {
+                console.error("解析配置失敗:", err);
+                showToast("解析失敗，請確認貼上的程式碼是否完整！");
+            }
         });
 
         // ================= 棋盤格 UI 產生 =================
@@ -605,10 +756,10 @@
                 matrix.push(board.slice(r * SIZE, (r + 1) * SIZE));
             }
             const directions = [
-                { dr: 0, dc: 1 },  // 橫向
-                { dr: 1, dc: 0 },  // 縱向
-                { dr: 1, dc: 1 },  // 斜對角
-                { dr: 1, dc: -1 }  // 反斜對角
+                { dr: 0, dc: 1 },  
+                { dr: 1, dc: 0 },  
+                { dr: 1, dc: 1 },  
+                { dr: 1, dc: -1 }  
             ];
             for (let r = 0; r < SIZE; r++) {
                 for (let c = 0; c < SIZE; c++) {
@@ -644,18 +795,14 @@
             if (!gameActive || boardState[index] !== null) return;
 
             if (currentMode === MODES.PVP_ONLINE) {
-                // 雲端模式：不是自己的回合，禁止點擊
                 if (currentTurn !== myOnlineRole) {
                     showToast('目前是對手的回合，請稍候！');
                     playSound('error');
                     return;
                 }
 
-                // 執行本地落子預測 (提升操作即時手感)
                 makeMove(index, currentTurn);
 
-                // 更新至雲端即時資料庫
-                const { doc, updateDoc } = window.dbUtils;
                 const nextTurn = currentTurn === 'O' ? 'X' : 'O';
                 const nextBoardState = [...boardState];
                 nextBoardState[index] = currentTurn;
@@ -669,7 +816,6 @@
                 return;
             }
 
-            // 單機/本地/AI 模式落子
             makeMove(index, currentTurn);
 
             if (evaluateGameStatus()) return;
@@ -878,7 +1024,6 @@
             return result; 
         }
 
-        // 顯示加入房間輸入面板
         btnJoinLobbyMode.addEventListener('click', () => {
             roomWaitPanel.classList.add('hidden');
             roomInputPanel.classList.remove('hidden');
@@ -895,7 +1040,6 @@
             connStatusText.classList.remove('hidden');
             btnCreateRoom.disabled = true;
 
-            const { doc, setDoc } = window.dbUtils;
             const roomId = generateShortRoomId();
             activeRoomId = roomId;
             myOnlineRole = 'O'; 
@@ -904,15 +1048,14 @@
                 roomId: roomId,
                 boardState: Array(25).fill(null),
                 currentTurn: 'O',
-                status: 'waiting', // waiting, playing, ended
+                status: 'waiting', 
                 playerO: currentUser.uid,
                 playerX: null,
                 lastAction: 'create',
-                createdAt: window.dbUtils.serverTimestamp()
+                createdAt: serverTimestamp()
             };
 
             try {
-                // 依照 Rule 1 的嚴格路徑：/artifacts/{appId}/public/data/rooms/{roomId}
                 const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
                 await setDoc(roomDocRef, roomData);
 
@@ -921,7 +1064,6 @@
                 roomWaitPanel.classList.remove('hidden');
                 connStatusText.classList.add('hidden');
 
-                // 啟動雲端即時監聽
                 startRoomListener(roomId);
                 showToast("雲端遊戲房建立成功！");
             } catch (err) {
@@ -940,7 +1082,6 @@
                 return;
             }
 
-            // 自動格式化連字號
             if (targetId.length === 6 && !targetId.includes('-')) {
                 targetId = targetId.slice(0, 3) + '-' + targetId.slice(3);
             }
@@ -953,7 +1094,6 @@
             connStatusText.textContent = "正在加入好友的房間...";
             connStatusText.classList.remove('hidden');
 
-            const { doc, getDoc, updateDoc } = window.dbUtils;
             const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', targetId);
 
             try {
@@ -974,7 +1114,6 @@
                 activeRoomId = targetId;
                 myOnlineRole = 'X'; 
 
-                // 更新加入者資訊
                 await updateDoc(roomDocRef, {
                     playerX: currentUser.uid,
                     status: 'playing',
@@ -999,13 +1138,10 @@
                 roomListenerUnsubscribe();
             }
 
-            const { doc, onSnapshot } = window.dbUtils;
             const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
 
-            // 遵守規則：必須處理錯誤 Callback
             roomListenerUnsubscribe = onSnapshot(roomDocRef, (docSnap) => {
                 if (!docSnap.exists()) {
-                    // 房間已被房主取消或關閉
                     showToast("對手已離開房間或對局已結束。");
                     disconnectOnline();
                     showScreen('start');
@@ -1014,23 +1150,19 @@
 
                 const roomData = docSnap.data();
 
-                // 情況一：房主收到「有對手加入」
                 if (myOnlineRole === 'O' && roomData.status === 'playing' && currentMode === MODES.PVP_ONLINE && !screenGame.classList.contains('hidden') === false) {
                     showScreen('game');
                     resetGame();
                     showToast("對手已進入房間，遊戲開戰！");
                 }
 
-                // 情況二：同步棋盤
                 if (roomData.status === 'playing') {
                     boardState = roomData.boardState;
                     currentTurn = roomData.currentTurn;
                     
-                    // 同步繪製畫面上所有的棋格
                     syncBoardUI();
                     updateTurnIndicator();
 
-                    // 檢查最新一步是否有勝負
                     const winIndicesO = checkWin(boardState, 'O');
                     const winIndicesX = checkWin(boardState, 'X');
                     
@@ -1043,7 +1175,6 @@
                     }
                 }
 
-                // 情況三：重新開始同步
                 if (roomData.lastAction === 'restart' && !gameActive) {
                     resetGame();
                     modalGameOver.classList.add('hidden');
@@ -1113,10 +1244,8 @@
             }
 
             if (activeRoomId) {
-                // 如果是房主離開，自動把雲端房間刪除，保持雲端乾淨
                 if (myOnlineRole === 'O') {
                     try {
-                        const { doc, deleteDoc } = window.dbUtils;
                         const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId);
                         await deleteDoc(roomDocRef);
                     } catch (e) {
@@ -1159,7 +1288,6 @@
                     return;
                 }
                 
-                const { doc, updateDoc } = window.dbUtils;
                 const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId);
                 await updateDoc(roomDocRef, {
                     boardState: Array(25).fill(null),
@@ -1177,7 +1305,6 @@
         btnModalNextGame.addEventListener('click', async () => {
             modalGameOver.classList.add('hidden');
             if (currentMode === MODES.PVP_ONLINE) {
-                const { doc, updateDoc } = window.dbUtils;
                 const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId);
                 await updateDoc(roomDocRef, {
                     boardState: Array(25).fill(null),
