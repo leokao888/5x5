@@ -49,7 +49,7 @@
     // 💡 預設 Firebase 設定（可直接在此修改，或在網頁 UI 中設定）
     // ==========================================
     const DEFAULT_FIREBASE_CONFIG = {
-      apiKey: "AIzaSyCey9QG6f56lfImOfNmYxZXyB45iBwO3AE",
+     apiKey: "AIzaSyCey9QG6f56lfImOfNmYxZXyB45iBwO3AE",
       authDomain: "modern-tic-tac-toe-dda2a.firebaseapp.com",
       projectId: "modern-tic-tac-toe-dda2a",
       storageBucket: "modern-tic-tac-toe-dda2a.firebasestorage.app",
@@ -633,7 +633,7 @@
                         maxLength={4}
                         placeholder="例如 8888"
                         value={inputRoomCode}
-                        onChange={(e) => setInputRoomCode(e.replace(/\D/g, ''))}
+                        onChange={(e) => setInputRoomCode(e.target.value.replace(/\D/g, ''))}
                         className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-center font-black text-slate-800 tracking-widest text-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                       />
                       <button
