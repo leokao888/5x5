@@ -201,7 +201,7 @@
         return null;
       };
 
-      // --- 監聽本地與 AI 落子結果 ---
+      // --- 監聽棋盤落子與勝負判定 ---
       useEffect(() => {
         const result = checkWinner(board);
         if (result) {
@@ -215,6 +215,12 @@
           return;
         }
 
+        // 💡 關鍵修正：當沒有勝負結果（如點擊重新開始清空棋盤時），將狀態設回 'playing'
+        if (gameStatus !== 'playing') {
+          setGameStatus('playing');
+        }
+
+        // 單人模式：觸發 AI 下棋
         if (mode === 'single' && !isXNext && gameStatus === 'playing') {
           const timer = setTimeout(() => {
             makeAiMove();
@@ -771,7 +777,7 @@
                   <div className="space-y-4">
                     <div className="text-center space-y-1">
                       <h3 className="text-xl font-bold text-slate-800">資料庫連線設定</h3>
-                      <p className="text-xs text-slate-400 leading-relaxed">請將您在 Firebase 主控台取得的 Web SDK Config 貼在下方。設定將安全地儲存於您的瀏覽器中。</p>
+                      <p className="text-xs text-slate-400 leading-relaxed">請將您在 Firebase 主控台取得的 Web SDK Config 貼在下方。設定將 safe 地儲存於您的瀏覽器中。</p>
                     </div>
 
                     <div className="space-y-3">
