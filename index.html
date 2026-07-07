@@ -3,19 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEO NEXUS - 5x5 彩虹固定版</title>
+    <title>NEO NEXUS - 5x5 極限對決</title>
+    <!-- 引入 Tailwind CSS 與 Lucide 圖標 -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@400;700&display=swap');
+        
         body {
-            font-family: 'Orbitron', 'Noto Sans TC', sans-serif;
-            background: #070b12;
+            font-family: 'Noto Sans TC', 'Orbitron', sans-serif;
+            background: radial-gradient(circle at center, #111827 0%, #030712 100%);
             color: #f3f4f6;
             min-height: 100vh;
         }
+
+        /* 霓虹發光字體與外框 */
+        .neon-text-blue {
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.6), 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+        .neon-text-rose {
+            text-shadow: 0 0 10px rgba(244, 63, 94, 0.6), 0 0 20px rgba(244, 63, 94, 0.4);
+        }
+        .neon-border-blue {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+        .neon-border-rose {
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.3);
+        }
+
+        /* 棋子發光渲染 */
+        .cell-o {
+            color: #3b82f6;
+            text-shadow: 0 0 12px rgba(59, 130, 246, 0.8);
+        }
+        .cell-x {
+            color: #f43f5e;
+            text-shadow: 0 0 12px rgba(244, 63, 94, 0.8);
+        }
+
         /* 電競流光彩虹字體 */
         .rainbow-text {
-            background: linear-gradient(90deg, #ff0055, #00ffcc, #9900ff, #ff9900, #ff0055);
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899, #f43f5e, #3b82f6);
             background-size: 300% auto;
             animation: shine 6s linear infinite;
             -webkit-background-clip: text;
@@ -24,92 +52,124 @@
         @keyframes shine {
             to { background-position: 300% center; }
         }
-        /* O 棋子：青藍色發光 */
-        .piece-O {
-            color: #00f0ff;
-            text-shadow: 0 0 12px rgba(0, 240, 255, 0.8);
+
+        /* 隱藏滾動條 */
+        ::-webkit-scrollbar {
+            width: 6px;
         }
-        /* X 棋子：極光粉發光 */
-        .piece-X {
-            color: #ff007f;
-            text-shadow: 0 0 12px rgba(255, 0, 127, 0.8);
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-start p-4">
+<body class="flex flex-col items-center justify-start min-h-screen p-4 md:p-8">
 
-    <div class="w-full max-w-md bg-gray-900/90 border border-gray-800 p-6 rounded-2xl shadow-2xl mt-2 backdrop-blur-md">
+    <!-- 頂部遊戲大標題 -->
+    <div class="text-center mb-6">
+        <h1 class="text-4xl md:text-5xl font-black tracking-widest rainbow-text font-['Orbitron']">NEO NEXUS</h1>
+        <p class="text-xs text-gray-400 tracking-widest mt-2 uppercase font-['Orbitron']">5x5 GRID / 4-IN-A-ROW TO WIN</p>
+    </div>
+
+    <!-- 遊戲主要面板 -->
+    <div class="w-full max-w-md bg-gray-900/80 border border-gray-800 p-6 rounded-3xl shadow-2xl backdrop-blur-lg">
         
-        <div class="text-center mb-5">
-            <h1 class="text-4xl font-black tracking-widest rainbow-text">NEO NEXUS</h1>
-            <p class="text-[10px] text-gray-500 tracking-widest mt-1">5x5 GRID / 4-IN-A-ROW TO WIN</p>
-        </div>
-
-        <div class="bg-gray-950/80 border border-gray-800 p-4 rounded-xl mb-5 space-y-3">
-            <div class="flex items-center justify-between gap-2">
+        <!-- 頂部控制列 -->
+        <div class="bg-gray-950/80 border border-gray-800/80 p-4 rounded-2xl mb-6 space-y-4">
+            <div class="flex items-center justify-between gap-4">
                 <div class="flex items-center space-x-2">
-                    <span class="text-xs font-bold text-gray-400 uppercase">模式:</span>
-                    <select id="mode-select" class="bg-gray-900 border border-gray-700 text-xs rounded px-2 py-1 text-cyan-400 font-bold focus:outline-none cursor-pointer">
+                    <span class="text-xs font-bold text-gray-400">模式:</span>
+                    <select id="mode-select" class="bg-gray-900 border border-gray-700 text-xs rounded-lg px-3 py-1.5 text-cyan-400 font-bold focus:outline-none focus:border-cyan-500 cursor-pointer transition">
                         <option value="PVE">個人模式 (vs 電腦)</option>
                         <option value="PVP_LOCAL">同屏雙人對戰</option>
-                        <option value="PVP_ONLINE">雲端即時對戰</option>
+                        <option value="PVP_ONLINE">即時雲端對戰</option>
                     </select>
                 </div>
-                <div id="status-badge" class="text-xs px-3 py-1 bg-gray-900 border border-gray-700 text-yellow-400 rounded-full font-bold">
-                    未開始
+                <!-- 狀態顯示標籤 -->
+                <div id="status-badge" class="text-xs px-3 py-1 bg-gray-900 border border-gray-850 text-yellow-400 rounded-full font-bold transition-all duration-300">
+                    等待開始
                 </div>
             </div>
 
+            <!-- 控制按鈕組 -->
             <div class="grid grid-cols-3 gap-2">
-                <button onclick="actions.start()" class="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold py-2 rounded text-xs transition shadow-md shadow-emerald-950/30">
+                <button onclick="actions.start()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-2 rounded-xl text-xs transition duration-200 active:scale-95 shadow-lg shadow-emerald-950/20">
                     開始遊戲
                 </button>
-                <button onclick="actions.reset()" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold py-2 rounded text-xs transition border border-gray-700">
+                <button onclick="actions.reset()" class="bg-gray-850 hover:bg-gray-800 text-gray-200 font-bold py-2 rounded-xl text-xs transition duration-200 active:scale-95 border border-gray-750">
                     重新一局
                 </button>
-                <button onclick="actions.stop()" class="bg-gradient-to-r from-rose-700 to-red-700 hover:from-rose-600 hover:to-red-600 text-white font-bold py-2 rounded text-xs transition shadow-md shadow-rose-950/30">
+                <button onclick="actions.stop()" class="bg-gradient-to-r from-rose-700 to-red-700 hover:from-rose-600 hover:to-red-600 text-white font-bold py-2 rounded-xl text-xs transition duration-200 active:scale-95 shadow-lg shadow-rose-950/20">
                     結束/清空
                 </button>
             </div>
         </div>
 
-        <div id="online-panel" class="hidden bg-cyan-950/40 border border-cyan-800/60 p-3 rounded-xl mb-4 text-xs text-cyan-300 flex justify-between items-center">
-            <div>房間 ID: <span id="room-id" class="font-mono text-white font-bold select-all">--</span></div>
-            <div id="role-text" class="font-bold text-emerald-400">正在配對...</div>
+        <!-- 線上對戰大廳資訊區 -->
+        <div id="online-panel" class="hidden bg-cyan-950/40 border border-cyan-800/40 p-4 rounded-2xl mb-6 text-xs text-cyan-300 flex justify-between items-center animate-fade-in">
+            <div class="space-y-1">
+                <div class="text-[10px] text-cyan-500 font-bold uppercase tracking-wider">ROOM NODE</div>
+                <div id="room-id" class="font-mono text-white text-sm font-black select-all tracking-wider">--</div>
+            </div>
+            <div class="text-right">
+                <div class="text-[10px] text-cyan-500 font-bold uppercase tracking-wider">YOUR PROTOCOL</div>
+                <div id="role-text" class="font-bold text-emerald-400 text-sm">分配中...</div>
+            </div>
         </div>
 
+        <!-- 5x5 絕對等比例格點棋盤 -->
         <div class="w-full flex justify-center">
-            <div id="board" class="grid grid-cols-5 gap-2 p-3 bg-gray-950 rounded-xl border border-gray-800 w-full aspect-square">
-                </div>
+            <div id="board" class="grid grid-cols-5 gap-2.5 p-3.5 bg-gray-950 rounded-2xl border border-gray-850 w-full aspect-square">
+                <!-- 由 JavaScript 渲染，無論格子有無內容，形狀大小均固定不變 -->
+            </div>
         </div>
 
-        <div id="info-msg" class="text-center text-xs text-gray-400 mt-4 h-4 font-medium tracking-wide">
-            請選擇模式並點擊「開始遊戲」
+        <!-- 底部狀態提示 -->
+        <div id="info-msg" class="text-center text-xs text-gray-500 mt-6 h-4 font-medium tracking-wide">
+            請選擇對戰模式並點選「開始遊戲」
         </div>
     </div>
 
+    <!-- 彈出式對話框：Firebase 提醒 -->
+    <div id="firebase-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div class="flex items-center space-x-3 text-rose-500">
+                <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+                <h3 class="text-lg font-bold">雲端模組尚未啟用</h3>
+            </div>
+            <p class="text-sm text-gray-400 leading-relaxed">
+                您目前選擇了「即時雲端對戰」，但您尚未在程式碼中配置您的 Firebase 金鑰（Config）。
+            </p>
+            <div class="bg-gray-950 p-3 rounded-lg border border-gray-850 text-xs font-mono text-gray-400 leading-normal">
+                請在 index.html 搜尋 <br>
+                <span class="text-cyan-400 font-bold">MY_OWN_FIREBASE_CONFIG</span> <br>
+                並填入您申請到的專案金鑰。
+            </div>
+            <div class="pt-2 flex space-x-2">
+                <button onclick="closeFirebaseModal()" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                    返回單機玩
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 核心運作腳本 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc, getDocs, collection, query, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ================================================================
-        // 🔑 【Firebase 金鑰填寫區】
-        // 申請好專案後，請將 null 改成您的 config 物件，例如：
-        // const firebaseConfig = { apiKey: "...", authDomain: "..." };
+        // 🔑 【非工程師專屬：一鍵配置你的 Firebase 設定區】 🛠️
+        // 只要你在 Google Firebase 申請好專案後，將 null 改成你複製的設定物件！
         // ================================================================
-        const firebaseConfig = {
-    apiKey: "AIzaSyAaFcenn1NPIH3XEzdd9xNnfyB6m3KYT0A",
-    authDomain: "game-55-c674f.firebaseapp.com",
-    databaseURL: "https://game-55-c674f-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "game-55-c674f",
-    storageBucket: "game-55-c674f.firebasestorage.app",
-    messagingSenderId: "486407212523",
-    appId: "1:486407212523:web:817b9e9cbcd09602a81dae",
-    measurementId: "G-6GC4C4EREE"
-  };
+        const MY_OWN_FIREBASE_CONFIG = null;
 
-        let db, auth;
+        let db = null;
+        let auth = null;
         let isFirebaseReady = false;
         let gameActive = false;
         let currentMode = 'PVE'; 
@@ -126,26 +186,40 @@
         const onlinePanel = document.getElementById('online-panel');
         const roomIdEl = document.getElementById('room-id');
         const roleTextEl = document.getElementById('role-text');
+        const firebaseModal = document.getElementById('firebase-modal');
 
-        // 嘗試連結 Firebase
-        if (firebaseConfig) {
+        // 初始化圖標
+        lucide.createIcons();
+
+        // 安全初始化 Firebase，如果尚未填寫，不阻斷單機遊戲運行
+        if (MY_OWN_FIREBASE_CONFIG && typeof MY_OWN_FIREBASE_CONFIG === 'object' && MY_OWN_FIREBASE_CONFIG.apiKey) {
             try {
-                const app = initializeApp(firebaseConfig);
+                const app = initializeApp(MY_OWN_FIREBASE_CONFIG);
                 auth = getAuth(app);
                 db = getFirestore(app);
                 isFirebaseReady = true;
+                console.log("Firebase 雲端模組載入成功！");
             } catch (e) {
-                console.error("Firebase 初始化失敗:", e);
+                console.warn("Firebase 載入異常，已切換至本機沙盒模式：", e);
             }
+        } else {
+            console.log("提示：Firebase 設定值為空，將啟用「無痛單機安全鎖」，不影響本機對戰。");
         }
 
-        // 建立 5x5 絕對固定比例的格子 UI
+        // 彈窗控制
+        window.closeFirebaseModal = () => {
+            firebaseModal.classList.add('hidden');
+            modeSelect.value = 'PVE';
+            currentMode = 'PVE';
+        };
+
+        // 建立 5x5 絕對等寬高的格子 (使用 aspect-square 控制)
         function createBoardUI() {
             boardEl.innerHTML = '';
             for (let i = 0; i < 25; i++) {
                 const cell = document.createElement('button');
-                // 使用 w-full 與 aspect-square 強制格子在任何狀態下形狀大小完全固定一致
-                cell.className = 'w-full aspect-square bg-gray-900 border border-gray-800 rounded-xl flex items-center justify-center text-3xl font-black transition-all hover:bg-gray-850 disabled:cursor-not-allowed select-none p-0';
+                // w-full + aspect-square 確保不論為空、放 O、放 X，格子的寬高與排版完全固定
+                cell.className = 'w-full aspect-square bg-gray-900/60 border border-gray-800 rounded-2xl flex items-center justify-center text-3xl font-black transition-all duration-200 hover:bg-gray-850 hover:border-gray-700 active:scale-95 disabled:active:scale-100 disabled:cursor-not-allowed select-none p-0';
                 cell.dataset.index = i;
                 cell.addEventListener('click', () => handleCellClick(i));
                 boardEl.appendChild(cell);
@@ -157,37 +231,70 @@
             cells.forEach((cell, idx) => {
                 const val = boardState[idx];
                 cell.textContent = val;
-                cell.className = cell.className.replace(/piece-O|piece-X/g, '');
-                if (val === 'O') cell.classList.add('piece-O');
-                if (val === 'X') cell.classList.add('piece-X');
-                cell.disabled = !gameActive || val !== '' || (currentMode === 'PVP_ONLINE' && turn !== myRole);
+                
+                // 清理舊樣式並套用專屬發光色調
+                cell.className = cell.className.replace(/cell-o|cell-x|bg-gray-900/g, '');
+                if (val === 'O') {
+                    cell.classList.add('cell-o', 'bg-blue-950/20');
+                } else if (val === 'X') {
+                    cell.classList.add('cell-x', 'bg-rose-950/20');
+                } else {
+                    cell.classList.add('bg-gray-900/60');
+                }
+
+                // 點擊鎖定：沒開始、已有棋子、或雲端模式下不該自己下時禁用
+                const isMyTurnOnline = (currentMode === 'PVP_ONLINE' && turn === myRole);
+                const isLocalMode = (currentMode !== 'PVP_ONLINE');
+                cell.disabled = !gameActive || val !== '' || (!isLocalMode && !isMyTurnOnline);
             });
 
+            // 更新上方狀態標籤的酷炫特效
             if (gameActive) {
                 if (currentMode === 'PVP_ONLINE') {
-                    statusBadge.textContent = turn === myRole ? "輪到你" : "等候中";
-                    statusBadge.className = turn === myRole ? "text-xs px-3 py-1 bg-cyan-950 border border-cyan-500 text-cyan-400 rounded-full font-bold animate-pulse" : "text-xs px-3 py-1 bg-gray-800 text-gray-400 rounded-full font-bold";
+                    if (turn === myRole) {
+                        statusBadge.textContent = "輪到你";
+                        statusBadge.className = "text-xs px-3 py-1 bg-cyan-950 border border-cyan-500 text-cyan-400 rounded-full font-bold animate-pulse neon-border-blue";
+                    } else {
+                        statusBadge.textContent = "對手回合";
+                        statusBadge.className = "text-xs px-3 py-1 bg-gray-900 border border-gray-800 text-gray-500 rounded-full font-bold";
+                    }
                 } else {
-                    statusBadge.textContent = `輪到: ${turn}`;
-                    statusBadge.className = turn === 'O' ? "text-xs px-3 py-1 bg-cyan-950 border border-cyan-700 text-cyan-400 rounded-full font-bold" : "text-xs px-3 py-1 bg-rose-950 border border-rose-700 text-rose-400 rounded-full font-bold";
+                    statusBadge.textContent = `回合: ${turn}`;
+                    if (turn === 'O') {
+                        statusBadge.className = "text-xs px-3 py-1 bg-blue-950 border border-blue-500 text-blue-400 rounded-full font-bold neon-border-blue";
+                    } else {
+                        statusBadge.className = "text-xs px-3 py-1 bg-rose-950 border border-rose-500 text-rose-400 rounded-full font-bold neon-border-rose";
+                    }
                 }
             }
         }
 
+        // 核心 4 子連線勝負判定演算法
         function checkWin(board) {
-            const size = 5, winCount = 4;
-            const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+            const size = 5;
+            const winCount = 4;
+            const directions = [
+                [0, 1],   // 水平
+                [1, 0],   // 垂直
+                [1, 1],   // 右下斜
+                [1, -1]   // 左下斜
+            ];
+
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
                     const player = board[r * size + c];
                     if (!player) continue;
+
                     for (const [dr, dc] of directions) {
                         let count = 1;
                         for (let i = 1; i < winCount; i++) {
                             const nr = r + dr * i;
                             const nc = c + dc * i;
-                            if (nr >= 0 && nr < size && nc >= 0 && nc < size && board[nr * size + nc] === player) count++;
-                            else break;
+                            if (nr >= 0 && nr < size && nc >= 0 && nc < size && board[nr * size + nc] === player) {
+                                count++;
+                            } else {
+                                break;
+                            }
                         }
                         if (count === winCount) return player;
                     }
@@ -196,6 +303,7 @@
             return board.includes('') ? null : 'TIE';
         }
 
+        // 點擊落子觸發
         async function handleCellClick(idx) {
             if (!gameActive || boardState[idx] !== '') return;
             if (currentMode === 'PVP_ONLINE' && turn !== myRole) return;
@@ -205,43 +313,56 @@
             if (currentMode === 'PVP_ONLINE') {
                 const nextTurn = turn === 'O' ? 'X' : 'O';
                 const winner = checkWin(boardState);
-                await updateDoc(doc(db, "rooms", currentRoomId), {
-                    board: boardState,
-                    turn: nextTurn,
-                    winner: winner || ''
-                });
+                try {
+                    await updateDoc(doc(db, "rooms", currentRoomId), {
+                        board: boardState,
+                        turn: nextTurn,
+                        winner: winner || ''
+                    });
+                } catch (e) {
+                    console.error("雲端更新失敗:", e);
+                }
             } else {
                 const winner = checkWin(boardState);
-                if (winner) { endGame(winner); return; }
+                if (winner) {
+                    endGame(winner);
+                    return;
+                }
                 
                 turn = turn === 'O' ? 'X' : 'O';
                 renderBoard();
 
+                // PVE 模式：輪到電腦自動防守或反擊
                 if (currentMode === 'PVE' && turn === 'X' && gameActive) {
-                    infoMsg.textContent = "AI 正在思考最佳路徑...";
-                    setTimeout(robotMove, 500);
+                    infoMsg.textContent = "AI 正在進行戰略分析...";
+                    setTimeout(robotMove, 600);
                 }
             }
         }
 
+        // 啟發式 AI 權重演算法 (不卡頓、聰明防守)
         function robotMove() {
             if (!gameActive) return;
             let available = [];
             boardState.forEach((val, idx) => { if (val === '') available.push(idx); });
             if (available.length === 0) return;
 
+            // 1. 檢查自己能否「一子取勝」
             for (let idx of available) {
                 let test = [...boardState]; test[idx] = 'X';
                 if (checkWin(test) === 'X') { executeRobotMove(idx); return; }
             }
+            // 2. 檢查對手是否即將「一子取勝」，進行「關鍵拦截」
             for (let idx of available) {
                 let test = [...boardState]; test[idx] = 'O';
                 if (checkWin(test) === 'O') { executeRobotMove(idx); return; }
             }
-            const centerIndices = [12, 6, 8, 16, 18];
+            // 3. 佔領優勢中心點
+            const centerIndices = [12, 6, 8, 16, 18, 7, 11, 13, 17];
             const bestCenter = centerIndices.find(idx => available.includes(idx));
             if (bestCenter) { executeRobotMove(bestCenter); return; }
 
+            // 4. 隨機
             const randomIdx = available[Math.floor(Math.random() * available.length)];
             executeRobotMove(randomIdx);
         }
@@ -253,44 +374,53 @@
                 endGame(winner);
             } else {
                 turn = 'O';
-                infoMsg.textContent = "請落子...";
+                infoMsg.textContent = "輪到你了，請選擇位置落子！";
                 renderBoard();
             }
         }
 
+        // 結束遊戲結算
         function endGame(winner) {
             gameActive = false;
             renderBoard();
             if (winner === 'TIE') {
-                statusBadge.textContent = "平手";
-                statusBadge.className = "text-xs px-3 py-1 bg-gray-700 text-gray-200 rounded-full font-bold";
-                infoMsg.textContent = "不分勝負，雙方實力旗鼓相當！";
+                statusBadge.textContent = "平局";
+                statusBadge.className = "text-xs px-3 py-1 bg-gray-850 text-gray-300 rounded-full font-bold";
+                infoMsg.textContent = "不分勝負，雙方勢均力敵！";
             } else {
-                statusBadge.textContent = `獲勝者: ${winner}`;
-                statusBadge.className = winner === 'O' ? "text-xs px-3 py-1 bg-cyan-500 text-black rounded-full font-bold" : "text-xs px-3 py-1 bg-rose-500 text-white rounded-full font-bold";
-                infoMsg.textContent = `玩家 ${winner} 達成 4 子連線成功！`;
+                statusBadge.textContent = `WINNER: ${winner}`;
+                if (winner === 'O') {
+                    statusBadge.className = "text-xs px-3 py-1 bg-emerald-500 text-black rounded-full font-bold neon-border-blue";
+                    infoMsg.textContent = "🎉 恭喜 O 玩家達成了 4 子連線獲勝！";
+                } else {
+                    statusBadge.className = "text-xs px-3 py-1 bg-rose-500 text-white rounded-full font-bold neon-border-rose";
+                    infoMsg.textContent = "🎉 恭喜 X 玩家達成了 4 子連線獲勝！";
+                }
             }
         }
 
+        // 清理連線監聽器
         function cleanOnlineSession() {
             if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
             currentRoomId = null;
             onlinePanel.classList.add('hidden');
         }
 
+        // 初始化線上對戰邏輯
         async function setupOnlineGame() {
             if (!isFirebaseReady) {
-                alert("請先在程式碼中的 firebaseConfig 填入您的 Firebase 連線金鑰！");
+                firebaseModal.classList.remove('hidden');
                 cleanOnlineSession();
                 modeSelect.disabled = false;
-                statusBadge.textContent = "未開始";
+                statusBadge.textContent = "等待開始";
                 return;
             }
-            infoMsg.textContent = "安全節點認證中...";
+            infoMsg.textContent = "與雲端安全核心通訊中...";
             try {
                 await signInAnonymously(auth);
-                infoMsg.textContent = "正在尋找開放配對房間...";
+                infoMsg.textContent = "搜尋開放對決房間中...";
                 
+                // 搜尋狀態為 waiting 且尚未開始的房間
                 const q = query(collection(db, "rooms"), where("status", "==", "waiting"), limit(1));
                 const querySnapshot = await getDocs(q);
                 
@@ -300,6 +430,7 @@
                     myRole = 'X';
                     await updateDoc(doc(db, "rooms", currentRoomId), { status: "playing" });
                 } else {
+                    // 隨機生成 6 位數房間 ID
                     currentRoomId = "ROOM_" + Math.floor(Math.random() * 899999 + 100000);
                     myRole = 'O';
                     await setDoc(doc(db, "rooms", currentRoomId), {
@@ -311,7 +442,7 @@
                 }
 
                 roomIdEl.textContent = currentRoomId;
-                roleTextEl.textContent = `你持旗: ${myRole}`;
+                roleTextEl.textContent = `持棋: [ ${myRole} ]`;
                 onlinePanel.classList.remove('hidden');
 
                 unsubscribeRoom = onSnapshot(doc(db, "rooms", currentRoomId), (snapshot) => {
@@ -322,8 +453,8 @@
 
                     if (data.status === 'waiting') {
                         gameActive = false;
-                        statusBadge.textContent = "等待對手...";
-                        infoMsg.textContent = "已建立大廳節點，等待第二位探測者加入...";
+                        statusBadge.textContent = "等候中...";
+                        infoMsg.textContent = "已建立大廳節點，等候其他對手連線入座...";
                     } else if (data.status === 'playing') {
                         if (data.winner) {
                             endGame(data.winner);
@@ -331,17 +462,21 @@
                             modeSelect.disabled = false;
                         } else {
                             gameActive = true;
-                            infoMsg.textContent = `對戰連線成功！您的身份是 [ ${myRole} ]`;
+                            infoMsg.textContent = `連線成功！你執 [ ${myRole} ]`;
                         }
                     }
                     renderBoard();
+                }, (err) => {
+                    console.error("雲端同步異常:", err);
+                    infoMsg.textContent = "連線同步失敗，請重新連線！";
                 });
             } catch (err) {
-                console.error(err);
-                infoMsg.textContent = "雲端失敗: " + err.message;
+                console.error("線上登入失敗:", err);
+                infoMsg.textContent = "連線錯誤: " + err.message;
             }
         }
 
+        // 全域控制按鈕綁定
         window.actions = {
             start: async () => {
                 cleanOnlineSession();
@@ -354,7 +489,7 @@
                     await setupOnlineGame();
                 } else {
                     gameActive = true;
-                    infoMsg.textContent = currentMode === 'PVE' ? "核心啟動！請下子 (O)" : "同屏雙人模式：由 O 先行落子";
+                    infoMsg.textContent = currentMode === 'PVE' ? "戰局開始！請下子 (O)" : "同屏雙人戰鬥：由 O 先下";
                     renderBoard();
                 }
             },
@@ -365,7 +500,7 @@
                     boardState = Array(25).fill('');
                     turn = 'O';
                     gameActive = true;
-                    infoMsg.textContent = "新局開始！由 O 先行落子";
+                    infoMsg.textContent = "戰局已刷新！由 O 先行落子";
                     renderBoard();
                 }
             },
@@ -374,15 +509,15 @@
                 gameActive = false;
                 boardState = Array(25).fill('');
                 modeSelect.disabled = false;
-                statusBadge.textContent = "未開始";
+                statusBadge.textContent = "等待開始";
                 statusBadge.className = "text-xs px-3 py-1 bg-gray-900 text-yellow-400 rounded-full font-bold";
-                infoMsg.textContent = "遊戲已重設，請重新選擇模式。";
+                infoMsg.textContent = "對局已結束，可點擊「開始遊戲」重開！";
                 createBoardUI();
                 renderBoard();
             }
         };
 
-        // 頁面初始化
+        // 一啟動時先將畫面的格子渲染完成
         createBoardUI();
         renderBoard();
     </script>
